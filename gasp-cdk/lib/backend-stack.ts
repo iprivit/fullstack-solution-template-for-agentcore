@@ -5,6 +5,7 @@ import * as codebuild from "aws-cdk-lib/aws-codebuild"
 import * as iam from "aws-cdk-lib/aws-iam"
 import * as s3Assets from "aws-cdk-lib/aws-s3-assets"
 import * as ssm from "aws-cdk-lib/aws-ssm"
+// Note: Using CfnResource for BedrockAgentCore as the L2 construct may not be available yet
 import { PythonFunction } from "@aws-cdk/aws-lambda-python-alpha"
 import * as lambda from "aws-cdk-lib/aws-lambda"
 import { Construct } from "constructs"
@@ -150,7 +151,6 @@ export class BackendStack extends cdk.NestedStack {
 
     // CodeBuild Role
     const codebuildRole = new iam.Role(this, "CodeBuildRole", {
-      roleName: `${config.stack_name_base}-backend-codebuild-role`,
       assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
       inlinePolicies: {
         CodeBuildPolicy: new iam.PolicyDocument({
@@ -249,6 +249,8 @@ export class BackendStack extends cdk.NestedStack {
   }
 
   private createAgentCoreRuntime(config: AppConfig): void {
+    const pattern = config.backend?.pattern || "strands-single-agent"
+
     // Lambda function to trigger and wait for CodeBuild using Python 3.13
     const buildTriggerFunction = new PythonFunction(this, "BuildTriggerFunction", {
       entry: path.join(__dirname, "utils", "build-trigger-lambda"),
@@ -275,22 +277,51 @@ export class BackendStack extends cdk.NestedStack {
     // Create AgentCore execution role
     const agentRole = new AgentCoreRole(this, "AgentCoreRole")
 
-    // For now, we'll create a placeholder for the AgentCore Runtime
-    // since the bedrockagentcore module might not be available yet
-    // This will be updated when the module becomes available
+    // Create AgentCore Runtime with JWT authorizer using CloudFormation resource
+    const agentRuntime = new cdk.CfnResource(this, "AgentRuntime", {
+      type: "AWS::BedrockAgentCore::Runtime",
+      properties: {
+        AgentRuntimeName: `${config.stack_name_base.replace(/-/g, "_")}_${
+          this.agentName.valueAsString
+        }`,
+        AgentRuntimeArtifact: {
+          ContainerConfiguration: {
+            ContainerUri: `${this.ecrRepository.repositoryUri}:${this.imageTag.valueAsString}`,
+          },
+        },
+        NetworkConfiguration: {
+          NetworkMode: this.networkMode.valueAsString,
+        },
+        ProtocolConfiguration: "HTTP",
+        RoleArn: agentRole.roleArn,
+        Description: `${pattern} agent runtime for ${config.stack_name_base}`,
+        EnvironmentVariables: {
+          AWS_DEFAULT_REGION: this.region,
+        },
+        // Add JWT authorizer with Cognito configuration
+        AuthorizerConfiguration: {
+          CustomJWTAuthorizer: {
+            DiscoveryUrl: `https://cognito-idp.${this.region}.amazonaws.com/${this.userPool.userPoolId}/.well-known/openid-configuration`,
+            AllowedClients: [this.userPoolClient.userPoolClientId],
+          },
+        },
+      },
+    })
 
-    // Store a placeholder runtime ARN
-    this.runtimeArn = `arn:aws:bedrock-agentcore:${this.region}:${this.account}:runtime/placeholder`
+    agentRuntime.node.addDependency(triggerBuild)
+
+    // Store the runtime ARN
+    this.runtimeArn = agentRuntime.getAtt("AgentRuntimeArn").toString()
 
     // Outputs
     new cdk.CfnOutput(this, "AgentRuntimeId", {
       description: "ID of the created agent runtime",
-      value: "placeholder-runtime-id",
+      value: agentRuntime.getAtt("AgentRuntimeId").toString(),
     })
 
     new cdk.CfnOutput(this, "AgentRuntimeArn", {
       description: "ARN of the created agent runtime",
-      value: this.runtimeArn,
+      value: agentRuntime.getAtt("AgentRuntimeArn").toString(),
       exportName: `${config.stack_name_base}-AgentRuntimeArn`,
     })
 
