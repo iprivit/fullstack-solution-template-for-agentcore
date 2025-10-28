@@ -1,0 +1,313 @@
+import * as cdk from "aws-cdk-lib"
+import * as cognito from "aws-cdk-lib/aws-cognito"
+import * as ecr from "aws-cdk-lib/aws-ecr"
+import * as codebuild from "aws-cdk-lib/aws-codebuild"
+import * as iam from "aws-cdk-lib/aws-iam"
+import * as s3Assets from "aws-cdk-lib/aws-s3-assets"
+import * as ssm from "aws-cdk-lib/aws-ssm"
+import { PythonFunction } from "@aws-cdk/aws-lambda-python-alpha"
+import * as lambda from "aws-cdk-lib/aws-lambda"
+import { Construct } from "constructs"
+import { AppConfig } from "./utils/config-manager"
+import { AgentCoreRole } from "./utils/agentcore-role"
+import * as path from "path"
+
+export interface BackendStackProps extends cdk.NestedStackProps {
+  config: AppConfig
+}
+
+export class BackendStack extends cdk.NestedStack {
+  public userPool: cognito.UserPool
+  public userPoolClient: cognito.UserPoolClient
+  public userPoolDomain: cognito.UserPoolDomain
+  public runtimeArn: string
+  public ecrRepository: ecr.Repository
+  public buildProject: codebuild.Project
+  private agentName: cdk.CfnParameter
+  private imageTag: cdk.CfnParameter
+  private networkMode: cdk.CfnParameter
+
+  constructor(scope: Construct, id: string, props: BackendStackProps) {
+    super(scope, id, props)
+
+    // Create Cognito User Pool first
+    this.createCognitoUserPool(props.config)
+
+    // Store Cognito config in SSM for frontend stack
+    this.createCognitoSSMParameters(props.config)
+
+    // Create ECR repository and CodeBuild project
+    this.createECRAndCodeBuild(props.config)
+
+    // Create AgentCore Runtime resources
+    this.createAgentCoreRuntime(props.config)
+
+    // Store runtime ARN in SSM for frontend stack
+    this.createRuntimeSSMParameters(props.config)
+  }
+
+  private createCognitoUserPool(config: AppConfig): void {
+    this.userPool = new cognito.UserPool(this, "UserPool", {
+      userPoolName: `${config.stack_name_base}-user-pool`,
+      signInAliases: {
+        username: true,
+        email: true,
+      },
+      autoVerify: {
+        email: true,
+      },
+      passwordPolicy: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireDigits: true,
+        requireSymbols: true,
+      },
+      accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    })
+
+    this.userPoolClient = new cognito.UserPoolClient(this, "UserPoolClient", {
+      userPool: this.userPool,
+      userPoolClientName: `${config.stack_name_base}-client`,
+      generateSecret: false,
+      authFlows: {
+        userPassword: true,
+        userSrp: true,
+      },
+      oAuth: {
+        flows: {
+          authorizationCodeGrant: true,
+        },
+        scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE],
+        callbackUrls: ["http://localhost:5173", "https://localhost:5173"],
+      },
+      preventUserExistenceErrors: true,
+    })
+
+    this.userPoolDomain = new cognito.UserPoolDomain(this, "UserPoolDomain", {
+      userPool: this.userPool,
+      cognitoDomain: {
+        domainPrefix: `${config.stack_name_base}-${cdk.Aws.ACCOUNT_ID}-${cdk.Aws.REGION}`,
+      },
+    })
+  }
+
+  private createCognitoSSMParameters(config: AppConfig): void {
+    new ssm.StringParameter(this, "CognitoUserPoolIdParam", {
+      parameterName: `/${config.stack_name_base}/cognito-user-pool-id`,
+      stringValue: this.userPool.userPoolId,
+    })
+
+    new ssm.StringParameter(this, "CognitoUserPoolClientIdParam", {
+      parameterName: `/${config.stack_name_base}/cognito-user-pool-client-id`,
+      stringValue: this.userPoolClient.userPoolClientId,
+    })
+
+    new ssm.StringParameter(this, "CognitoDomainParam", {
+      parameterName: `/${config.stack_name_base}/cognito-domain`,
+      stringValue: `${this.userPoolDomain.domainName}.auth.${cdk.Aws.REGION}.amazoncognito.com`,
+    })
+  }
+
+  private createECRAndCodeBuild(config: AppConfig): void {
+    const pattern = config.backend?.pattern || "strands-single-agent"
+
+    // Parameters
+    this.agentName = new cdk.CfnParameter(this, "AgentName", {
+      type: "String",
+      default: "StrandsAgent",
+      description: "Name for the agent runtime",
+    })
+
+    this.imageTag = new cdk.CfnParameter(this, "ImageTag", {
+      type: "String",
+      default: "latest",
+      description: "Tag for the Docker image",
+    })
+
+    this.networkMode = new cdk.CfnParameter(this, "NetworkMode", {
+      type: "String",
+      default: "PUBLIC",
+      description: "Network mode for AgentCore resources",
+      allowedValues: ["PUBLIC", "PRIVATE"],
+    })
+
+    // ECR Repository
+    this.ecrRepository = new ecr.Repository(this, "ECRRepository", {
+      repositoryName: `${config.stack_name_base.toLowerCase()}-${pattern}`,
+      imageTagMutability: ecr.TagMutability.MUTABLE,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      emptyOnDelete: true,
+      imageScanOnPush: true,
+    })
+
+    // S3 Asset for source code
+    const patternPath = path.join(__dirname, "..", "..", "patterns", pattern)
+    const sourceAsset = new s3Assets.Asset(this, "SourceAsset", {
+      path: patternPath,
+    })
+
+    // CodeBuild Role
+    const codebuildRole = new iam.Role(this, "CodeBuildRole", {
+      roleName: `${config.stack_name_base}-backend-codebuild-role`,
+      assumedBy: new iam.ServicePrincipal("codebuild.amazonaws.com"),
+      inlinePolicies: {
+        CodeBuildPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              sid: "CloudWatchLogs",
+              effect: iam.Effect.ALLOW,
+              actions: ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+              resources: [`arn:aws:logs:${this.region}:${this.account}:log-group:/aws/codebuild/*`],
+            }),
+            new iam.PolicyStatement({
+              sid: "ECRAccess",
+              effect: iam.Effect.ALLOW,
+              actions: [
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:BatchGetImage",
+                "ecr:GetAuthorizationToken",
+                "ecr:PutImage",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+              ],
+              resources: [this.ecrRepository.repositoryArn, "*"],
+            }),
+            new iam.PolicyStatement({
+              sid: "S3SourceAccess",
+              effect: iam.Effect.ALLOW,
+              actions: ["s3:GetObject"],
+              resources: [`${sourceAsset.bucket.bucketArn}/*`],
+            }),
+          ],
+        }),
+      },
+    })
+
+    // CodeBuild Project
+    this.buildProject = new codebuild.Project(this, "AgentImageBuildProject", {
+      projectName: `${config.stack_name_base}-${pattern}-build`,
+      description: `Build ${pattern} agent Docker image for ${config.stack_name_base}`,
+      role: codebuildRole,
+      environment: {
+        buildImage: codebuild.LinuxArmBuildImage.AMAZON_LINUX_2_STANDARD_3_0,
+        computeType: codebuild.ComputeType.LARGE,
+        privileged: true,
+      },
+      source: codebuild.Source.s3({
+        bucket: sourceAsset.bucket,
+        path: sourceAsset.s3ObjectKey,
+      }),
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: "0.2",
+        phases: {
+          pre_build: {
+            commands: [
+              "echo Logging in to Amazon ECR...",
+              "aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com",
+            ],
+          },
+          build: {
+            commands: [
+              "echo Build started on `date`",
+              "echo Building the Docker image for agent ARM64...",
+              "docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .",
+              "docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG",
+            ],
+          },
+          post_build: {
+            commands: [
+              "echo Build completed on `date`",
+              "echo Pushing the Docker image...",
+              "docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG",
+              "echo ARM64 Docker image pushed successfully",
+            ],
+          },
+        },
+      }),
+      environmentVariables: {
+        AWS_DEFAULT_REGION: {
+          value: this.region,
+        },
+        AWS_ACCOUNT_ID: {
+          value: this.account,
+        },
+        IMAGE_REPO_NAME: {
+          value: this.ecrRepository.repositoryName,
+        },
+        IMAGE_TAG: {
+          value: this.imageTag.valueAsString,
+        },
+        STACK_NAME: {
+          value: config.stack_name_base,
+        },
+      },
+    })
+  }
+
+  private createAgentCoreRuntime(config: AppConfig): void {
+    // Lambda function to trigger and wait for CodeBuild using Python 3.13
+    const buildTriggerFunction = new PythonFunction(this, "BuildTriggerFunction", {
+      entry: path.join(__dirname, "utils", "build-trigger-lambda"),
+      runtime: lambda.Runtime.PYTHON_3_13,
+      handler: "handler",
+      timeout: cdk.Duration.minutes(15),
+      initialPolicy: [
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ["codebuild:StartBuild", "codebuild:BatchGetBuilds"],
+          resources: [this.buildProject.projectArn],
+        }),
+      ],
+    })
+
+    // Custom Resource using the Lambda function
+    const triggerBuild = new cdk.CustomResource(this, "TriggerImageBuild", {
+      serviceToken: buildTriggerFunction.functionArn,
+      properties: {
+        ProjectName: this.buildProject.projectName,
+      },
+    })
+
+    // Create AgentCore execution role
+    const agentRole = new AgentCoreRole(this, "AgentCoreRole")
+
+    // For now, we'll create a placeholder for the AgentCore Runtime
+    // since the bedrockagentcore module might not be available yet
+    // This will be updated when the module becomes available
+
+    // Store a placeholder runtime ARN
+    this.runtimeArn = `arn:aws:bedrock-agentcore:${this.region}:${this.account}:runtime/placeholder`
+
+    // Outputs
+    new cdk.CfnOutput(this, "AgentRuntimeId", {
+      description: "ID of the created agent runtime",
+      value: "placeholder-runtime-id",
+    })
+
+    new cdk.CfnOutput(this, "AgentRuntimeArn", {
+      description: "ARN of the created agent runtime",
+      value: this.runtimeArn,
+      exportName: `${config.stack_name_base}-AgentRuntimeArn`,
+    })
+
+    new cdk.CfnOutput(this, "AgentRoleArn", {
+      description: "ARN of the agent execution role",
+      value: agentRole.roleArn,
+    })
+
+    // Ensure the custom resource depends on the build project
+    triggerBuild.node.addDependency(this.buildProject)
+  }
+
+  private createRuntimeSSMParameters(config: AppConfig): void {
+    // Store runtime ARN in SSM for frontend stack
+    new ssm.StringParameter(this, "RuntimeArnParam", {
+      parameterName: `/${config.stack_name_base}/runtime-arn`,
+      stringValue: this.runtimeArn,
+    })
+  }
+}

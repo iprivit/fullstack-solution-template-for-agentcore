@@ -22,5 +22,6 @@ rvl_cdip_*
 notebooks/examples/data
 .idea/
 .dsr/
-node_modules
-cdk.out
+**/cdk.out
+**/.envrc
+**/node_modules
