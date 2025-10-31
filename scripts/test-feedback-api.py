@@ -139,9 +139,9 @@ def test_positive_feedback(api_url: str, token: str) -> bool:
         method="POST",
         data={
             "sessionId": "test-session-123",
-            "message": "Amazon S3 provides object storage with high durability and availability. It offers features like versioning, lifecycle policies, and encryption.",  # Agent's response
+            "message": "foo",  # Agent's response
             "feedbackType": "positive",
-            "comment": "Very helpful and accurate explanation of S3 features",  # Optional: User's feedback comment
+            "comment": "bar",  # Optional: User's feedback comment
         },
     )
     
@@ -165,9 +165,9 @@ def test_negative_feedback(api_url: str, token: str) -> bool:
         method="POST",
         data={
             "sessionId": "test-session-456",
-            "message": "AWS Lambda is a serverless compute service.",  # Agent's response
+            "message": "foo",  # Agent's response
             "feedbackType": "negative",
-            "comment": "Too brief, didn't answer my pricing question",  # Optional: User's feedback comment
+            "comment": "bar",  # Optional: User's feedback comment
         },
     )
     
