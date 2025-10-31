@@ -272,6 +272,10 @@ def main():
     print(f"Passed: {Fore.GREEN}{passed}{Style.RESET_ALL}")
     print(f"Failed: {Fore.RED}{failed}{Style.RESET_ALL}\n")
     
+    # NOTE: Table name follows the pattern '{stack_name}-feedback' defined in infra-cdk/lib/backend-stack.ts
+    # If you change the table name in CDK, update this reference accordingly.
+    print(f"To view the stored feedback, open the DynamoDB table named '{stack_name}-feedback' in the AWS Console.\n")
+    
     if failed == 0:
         print(f"{Fore.GREEN}All tests passed! ✓{Style.RESET_ALL}")
         sys.exit(0)
