@@ -25,3 +25,4 @@ notebooks/examples/data
 **/cdk.out
 **/.envrc
 **/node_modules
+.venv
