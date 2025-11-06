@@ -14,6 +14,14 @@ Usage:
     
     # Use specific memory ARN
     uv run scripts/test-memory.py --memory-arn <arn>
+
+API References:
+    - Control Plane: https://boto3.amazonaws.com/v1/documentation/api/1.40.0/reference/services/bedrock-agentcore-control.html
+      (Memory resource management: create, update, delete memory)
+    
+    - Data Plane: https://boto3.amazonaws.com/v1/documentation/api/1.40.0/reference/services/bedrock-agentcore.html
+      (Event operations: create, list, retrieve events)
+
 """
 
 import sys
