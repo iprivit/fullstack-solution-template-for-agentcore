@@ -1,6 +1,6 @@
 {
-  "name": "genaiic-react-launch-kit",
-  "version": "1.0.0",
+  "name": "genaiid-agentcore-starter-pack-frontend",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
