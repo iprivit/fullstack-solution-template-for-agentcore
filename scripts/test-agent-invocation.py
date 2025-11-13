@@ -105,7 +105,7 @@ def start_local_agent(memory_id: str, region: str) -> subprocess.Popen:
     
     # Start agent process
     try:
-        _agent_process = subprocess.Popen(  # nosec B607 - command constructed from validated path, shell=False
+        _agent_process = subprocess.Popen(  # nosec B607 B603 - command constructed from validated path, shell=False
             ["uv", "run", str(agent_path)],
             env=env,
             stdout=subprocess.PIPE,
