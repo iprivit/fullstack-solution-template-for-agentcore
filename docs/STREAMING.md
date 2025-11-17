@@ -7,7 +7,10 @@ Your agent sends streaming events in SSE format. This guide explains how to inte
 ## Integration Steps
 
 1. **Your agent sends streaming events** (SSE format)
-2. **Update `agentCoreService.js`** to parse your agent's events
+2. **Update the appropriate parser file** to handle your agent's events:
+   - For **Strands agents**: Modify `frontend/src/services/strandsParser.js`
+   - For **LangGraph agents**: Modify `frontend/src/services/langgraphParser.js`
+   - For **other agent frameworks**: Create a new parser file and import it in `agentCoreService.js`
 3. **Update `ChatInterface.tsx`** (optional) to display additional info like tool usage
 4. **UI displays the parsed text** in real-time
 

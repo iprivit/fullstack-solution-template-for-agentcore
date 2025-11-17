@@ -5,4 +5,4 @@ stack_name_base: genaiid-agentcore-starter-pack
 admin_user_email: null # Example: admin@example.com
 
 backend:
-  pattern: strands-single-agent # Available patterns: strands-single-agent
+  pattern: strands-single-agent # Available patterns: strands-single-agent, langgraph-single-agent

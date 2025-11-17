@@ -231,12 +231,6 @@ export class BackendStack extends cdk.NestedStack {
       description: "ARN of the agent memory resource",
       value: memoryArn,
     })
-
-    // Agent pattern output for frontend parser selection
-    new cdk.CfnOutput(this, "AgentPattern", {
-      description: "Agent pattern type (e.g., strands-single-agent, langgraph-single-agent)",
-      value: pattern,
-    })
   }
 
   private createRuntimeSSMParameters(config: AppConfig): void {

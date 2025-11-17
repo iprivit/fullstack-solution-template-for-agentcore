@@ -79,6 +79,9 @@ async def create_langgraph_agent(user_id: str, session_id: str, tools: list):
     This function sets up a LangGraph StateGraph that can access tools through
     the AgentCore Gateway and maintains conversation memory.
     """
+    system_prompt = """You are a helpful assistant with access to tools via the Gateway.
+    When asked about your tools, list them and explain what they do."""
+
     # Create Bedrock model
     bedrock_model = ChatBedrock(
         model_id="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
@@ -103,7 +106,8 @@ async def create_langgraph_agent(user_id: str, session_id: str, tools: list):
         graph = create_react_agent(
             model=bedrock_model,
             tools=tools,
-            checkpointer=checkpointer
+            checkpointer=checkpointer,
+            prompt=system_prompt
         )
         
         print("[AGENT] Agent created successfully with Gateway tools")
