@@ -13,6 +13,7 @@ ENV UV_SYSTEM_PYTHON=1 \
 # Copy pyproject.toml and gateway package for GASP installation
 COPY pyproject.toml .
 COPY gateway/ gateway/
+COPY tools/ tools/
 
 # Copy and install agent-specific requirements first
 COPY patterns/strands-single-agent/requirements.txt requirements.txt
@@ -31,7 +32,7 @@ EXPOSE 8080
 
 # Copy agent code files
 COPY patterns/strands-single-agent/basic_agent.py .
-COPY patterns/strands-single-agent/code_interpreter_tools.py .
+COPY patterns/strands-single-agent/strands_code_interpreter.py .
 
 # Healthcheck using Python (no extra dependencies needed)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

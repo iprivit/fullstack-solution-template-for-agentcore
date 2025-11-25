@@ -7,13 +7,12 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
     AgentCoreMemorySessionManager,
 )
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from code_interpreter_tools import CodeInterpreterTools
+from gateway.utils.gateway_access_token import get_gateway_access_token
 from mcp.client.streamable_http import streamablehttp_client
 from strands import Agent
 from strands.models import BedrockModel
 from strands.tools.mcp import MCPClient
-
-from gateway.utils.gateway_access_token import get_gateway_access_token
+from strands_code_interpreter import StrandsCodeInterpreterTools
 
 app = BedrockAgentCoreApp()
 
@@ -105,7 +104,7 @@ def create_basic_agent(user_id: str, session_id: str) -> Agent:
     # Initialize Code Interpreter tools with boto3 session
     region = os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
     session = boto3.Session(region_name=region)
-    code_tools = CodeInterpreterTools(region)
+    code_tools = StrandsCodeInterpreterTools(region)
 
     try:
         print("[AGENT] Starting agent creation with Gateway tools...")

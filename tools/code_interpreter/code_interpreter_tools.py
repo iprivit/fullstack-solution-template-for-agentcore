@@ -1,10 +1,7 @@
-"""Code interpreter tools for agent."""
+"""Core Code Interpreter tools for AgentCore."""
 
 import json
 import logging
-
-import boto3
-from strands import tool
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +35,6 @@ class CodeInterpreterTools:
             self._code_client.stop()
             self._code_client = None
 
-    @tool
     def execute_python(self, code: str, description: str = "") -> str:
         """
         Execute Python code in secure sandbox.
