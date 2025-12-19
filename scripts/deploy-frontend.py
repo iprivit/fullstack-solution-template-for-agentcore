@@ -182,7 +182,10 @@ def get_stack_outputs(stack_name: str) -> Dict[str, str]:
     ])
 
     stack_data = json.loads(result.stdout)
-    outputs = stack_data['Stacks'][0].get('Outputs', [])
+    stacks = stack_data.get('Stacks', [])
+    if not stacks:
+        raise ValueError(f"Stack '{stack_name}' not found or has no data")
+    outputs = stacks[0].get('Outputs', [])
 
     return {o['OutputKey']: o['OutputValue'] for o in outputs}
 
@@ -204,9 +207,15 @@ def get_stack_region(stack_name: str) -> str:
     ])
 
     stack_data = json.loads(result.stdout)
-    stack_arn = stack_data['Stacks'][0]['StackId']
+    stacks = stack_data.get('Stacks', [])
+    if not stacks:
+        raise ValueError(f"Stack '{stack_name}' not found or has no data")
+    stack_arn = stacks[0]['StackId']
     # ARN format: arn:aws:cloudformation:region:account:stack/name/id
-    return stack_arn.split(':')[3]
+    arn_parts = stack_arn.split(':')
+    if len(arn_parts) < 4:
+        raise ValueError(f"Invalid stack ARN format: {stack_arn}")
+    return arn_parts[3]
 
 
 def upload_to_s3(local_path: str, bucket: str, key: str) -> None:
@@ -414,6 +423,9 @@ def main() -> int:
     except subprocess.CalledProcessError as e:
         log_error(f"Failed to fetch stack outputs: {e.stderr}")
         return 1
+    except ValueError as e:
+        log_error(str(e))
+        return 1
 
     # Validate required outputs
     app_id = outputs.get("AmplifyAppId")
@@ -517,7 +529,12 @@ def main() -> int:
     # Poll deployment status
     log_info("Monitoring deployment status...")
     while True:
-        status = get_amplify_job_status(app_id, BRANCH_NAME, job_id)
+        try:
+            status = get_amplify_job_status(app_id, BRANCH_NAME, job_id)
+        except subprocess.CalledProcessError as e:
+            log_error(f"Failed to get deployment status: {e.stderr}")
+            return 1
+
         print(f"  Status: {status}")
 
         if status == "SUCCEED":
@@ -530,11 +547,14 @@ def main() -> int:
         time.sleep(10)
 
     # Print final info
-    app_domain = get_amplify_app_domain(app_id)
     print()
     log_info(f"S3 Package: s3://{deployment_bucket}/{s3_key}")
     log_info("Console: https://console.aws.amazon.com/amplify/apps")
-    log_info(f"App URL: https://{BRANCH_NAME}.{app_domain}")
+    try:
+        app_domain = get_amplify_app_domain(app_id)
+        log_info(f"App URL: https://{BRANCH_NAME}.{app_domain}")
+    except subprocess.CalledProcessError:
+        log_warning("Could not retrieve app URL - check Amplify console")
 
     return 0
 
