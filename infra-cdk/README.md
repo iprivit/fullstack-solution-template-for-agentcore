@@ -133,7 +133,7 @@ The agent container builds use a specific configuration to handle the repository
 
 **Solution**: Use repository root as build context with optimized file filtering:
 
-1. **Build Context**: Repository root (`/home/ubuntu/gitlab/fullstack-agentcore-solution-template/`)
+1. **Build Context**: Repository root (`/path/to/fullstack-agentcore-solution-template/`)
 2. **Dockerfile Location**: `patterns/{pattern}/Dockerfile` 
 3. **Package Installation**: Install FAST package (`gateway/` + `pyproject.toml`) as proper Python package
 4. **File Filtering**: `.dockerignore` excludes large directories to prevent build hangs
