@@ -5,6 +5,24 @@ All notable changes to the Fullstack AgentCore Solution Template (FAST) will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-12-21
+
+### Changed
+- Updated GitLab references to GitHub for open source release
+- Updated internal AWS references to generic paths
+- Upgraded Python version requirement from 3.8 to 3.11
+- Replaced bash frontend deployment script with cross-platform Python script
+- Improved deployment documentation with clearer prerequisites
+
+### Fixed
+- API Gateway CloudWatch logs role creation issue
+- Enhanced error handling in frontend deployment script
+- Added explicit AWS credentials validation before deployment
+
+### Added
+- CONTRIBUTORS.md file listing project contributors
+- Docker runtime requirement clarification in deployment docs
+
 ## [0.1.3] - 2025-12-11
 
 ### Changed
