@@ -178,8 +178,8 @@ These can be set in a `.env` file or as environment variables. The application w
 
 - **Hot Reload**: Changes auto-reload in the browser with Vite's fast HMR
 - **TypeScript**: Full type safety with strict mode enabled
+- **Vibe Coding**: Optimized for AI-assisted development
 - **Tailwind CSS**: Utility-first styling with Tailwind CSS 4
-- **Fast Builds**: Vite provides lightning-fast builds and dev server startup
 
 ## Building with AI Assistants
 

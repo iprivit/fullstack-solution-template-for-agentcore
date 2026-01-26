@@ -1,13 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Build output tests for NextJS to Vite migration
- * Tests that build succeeds and produces correct output
- * 
- * Requirements: 1.3, 11.1, 11.2, 11.3, 11.4
- */
-
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
 import { resolve, join } from 'path'

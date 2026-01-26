@@ -1,13 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Configuration verification tests for NextJS to Vite migration
- * Tests vite.config.ts, tsconfig.json, package.json, and index.html
- * 
- * Requirements: 1.1, 1.6, 9.3, 10.1, 10.2, 10.3, 10.4, 10.5, 12.1, 12.2, 12.3, 12.4
- */
-
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'

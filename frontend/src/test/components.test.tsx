@@ -1,13 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Component integration tests for NextJS to Vite migration
- * Tests App component, AuthProvider, and routing structure
- * 
- * Requirements: 2.3, 2.5, 2.6
- */
-
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'

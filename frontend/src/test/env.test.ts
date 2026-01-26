@@ -1,13 +1,6 @@
 // Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-/**
- * Environment variable tests for NextJS to Vite migration
- * Tests that environment variables use VITE_ prefix and import.meta.env
- * 
- * Requirements: 4.1, 4.2, 4.3, 4.4, 4.5
- */
-
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'

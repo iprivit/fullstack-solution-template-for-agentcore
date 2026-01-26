@@ -3,10 +3,7 @@
 
 /**
  * Property-based test for public asset path handling
- * Feature: nextjs-to-vite-migration, Property 5: Public Asset Path Handling
- * 
- * Validates: Requirements 5.4
- * 
+ *  * 
  * This test verifies that all references to public assets in the source code
  * do not include the "/public" prefix, as Vite serves public assets from the
  * root path.
@@ -70,7 +67,7 @@ function findAssetReferences(content: string): string[] {
   return references
 }
 
-describe('Property 5: Public Asset Path Handling', () => {
+describe('Public Asset Path Handling', () => {
   const srcDir = path.resolve(__dirname, '..')
   const allSourceFiles = getAllSourceFiles(srcDir)
   

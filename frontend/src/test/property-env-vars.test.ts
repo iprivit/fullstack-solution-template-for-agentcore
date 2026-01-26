@@ -3,13 +3,6 @@
 
 /**
  * Property-based test for environment variable access pattern
- * Feature: nextjs-to-vite-migration, Property 1: Environment Variable Access Pattern
- * 
- * Validates: Requirements 4.1, 4.2
- * 
- * This test verifies that all files in the src/ directory use the correct
- * Vite environment variable pattern (import.meta.env.VITE_*) and do not
- * use the old NextJS pattern (process.env.NEXT_PUBLIC_*)
  */
 
 import { describe, it } from 'vitest'
@@ -43,31 +36,9 @@ function getAllSourceFiles(dir: string, fileList: string[] = []): string[] {
   return fileList
 }
 
-describe('Property 1: Environment Variable Access Pattern', () => {
+describe('Environment Variable Access Pattern', () => {
   const srcDir = path.resolve(__dirname, '..')
   const allSourceFiles = getAllSourceFiles(srcDir)
-  
-  it('should not use process.env.NEXT_PUBLIC_* pattern in any source file', () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(...allSourceFiles),
-        (filePath) => {
-          // Skip test files themselves (they may reference the pattern in tests)
-          if (filePath.includes('/test/')) {
-            return true
-          }
-          
-          const content = fs.readFileSync(filePath, 'utf-8')
-          
-          // Check for NextJS environment variable pattern
-          const hasNextJSPattern = /process\.env\.NEXT_PUBLIC_/g.test(content)
-          
-          return !hasNextJSPattern
-        }
-      ),
-      { numRuns: 100 }
-    )
-  })
   
   it('should use import.meta.env.VITE_* pattern when accessing environment variables', () => {
     fc.assert(

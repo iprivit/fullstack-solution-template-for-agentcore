@@ -3,19 +3,12 @@
 
 /**
  * Property-based test for configuration value compatibility
- * Feature: nextjs-to-vite-migration, Property 8: Configuration Value Compatibility
- * 
- * Validates: Requirements 4.4
- * 
- * This test verifies that Cognito configuration values work correctly with
- * the VITE_ prefix and that the configuration loading mechanism is compatible
- * with the migration.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import * as fc from 'fast-check'
 
-describe('Property 8: Configuration Value Compatibility', () => {
+describe('Configuration Value Compatibility', () => {
   // Store original env values
   const originalEnv = { ...import.meta.env }
   

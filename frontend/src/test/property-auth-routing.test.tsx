@@ -3,10 +3,6 @@
 
 /**
  * Property-based test for authentication state routing
- * Feature: nextjs-to-vite-migration, Property 7: Authentication State Routing
- * 
- * Validates: Requirements 2.4
- * 
  * This test verifies that the application renders the correct UI based on
  * authentication state: sign-in UI for unauthenticated users and chat
  * interface for authenticated users.
@@ -34,7 +30,7 @@ vi.mock('@/app/context/GlobalContext', () => ({
 
 import { useAuth } from '@/hooks/useAuth'
 
-describe('Property 7: Authentication State Routing', () => {
+describe('Authentication State Routing', () => {
   afterEach(() => {
     cleanup()
   })
