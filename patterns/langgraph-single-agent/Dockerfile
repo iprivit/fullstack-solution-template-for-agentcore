@@ -8,7 +8,9 @@ WORKDIR /app
 # Configure UV for container environment
 ENV UV_SYSTEM_PYTHON=1 \
     UV_COMPILE_BYTECODE=1 \
-    DOCKER_CONTAINER=1
+    DOCKER_CONTAINER=1 \
+    OTEL_PYTHON_LOG_CORRELATION=true \
+    PYTHONUNBUFFERED=1
 
 # Copy pyproject.toml and gateway package for FAST installation
 COPY pyproject.toml .
