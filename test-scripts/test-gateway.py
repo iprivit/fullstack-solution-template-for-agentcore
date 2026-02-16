@@ -19,9 +19,9 @@ import os
 from pathlib import Path
 
 # Add scripts directory to path for reliable imports
-script_dir = Path(__file__).parent
-if str(script_dir) not in sys.path:
-    sys.path.insert(0, str(script_dir))
+scripts_dir = Path(__file__).parent.parent / "scripts"
+if str(scripts_dir) not in sys.path:
+    sys.path.insert(0, str(scripts_dir))
 
 from utils import get_stack_config, get_ssm_params, authenticate_cognito, print_msg, print_section
 

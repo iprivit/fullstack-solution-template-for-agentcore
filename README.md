@@ -45,6 +45,22 @@ python scripts/deploy-frontend.py
 
 See the [deployment guide](docs/DEPLOYMENT.md) for detailed instructions on how to deploy FAST into an AWS account.
 
+### Local Development
+
+For local development, you can use Docker Compose to run both the frontend and agent locally while still connecting to your deployed AWS resources:
+
+```bash
+# Set required environment variables
+export MEMORY_ID=your-memory-id
+export STACK_NAME=your-stack-name  
+export AWS_DEFAULT_REGION=us-east-1
+
+# Start the full stack locally
+docker-compose up --build
+```
+
+See the [local development guide](docs/LOCAL_DEVELOPMENT.md) for detailed setup instructions. Note that you still need a deployed FAST stack for AWS dependencies (Memory, Gateway, SSM parameters).
+
 What comes next? That's up to you, the developer. With your requirements in mind, open up your coding assistant, describe what you'd like to do, and begin. The steering docs in this repository help guide coding assistants with best practices, and encourage them to always refer to the documentation built-in to the repository to make sure you end up building something great.
 
 
@@ -80,6 +96,7 @@ fullstack-agentcore-solution-template/
 │   │   └── types/          # TypeScript type definitions
 │   ├── public/             # Static assets and aws-exports.json
 │   ├── components.json     # shadcn/ui configuration
+│   ├── Dockerfile.dev      # Development container configuration
 │   └── package.json
 ├── infra-cdk/               # CDK infrastructure code
 │   ├── lib/                # CDK stack definitions
@@ -109,6 +126,7 @@ fullstack-agentcore-solution-template/
 │   ├── .nav.yml            # Navigation configuration
 │   ├── index.md            # Documentation landing page
 │   ├── DEPLOYMENT.md       # Deployment guide
+│   ├── LOCAL_DEVELOPMENT.md # Local development guide
 │   ├── AGENT_CONFIGURATION.md # Agent setup guide
 │   ├── MEMORY_INTEGRATION.md # Memory integration guide
 │   ├── GATEWAY.md          # Gateway integration guide
@@ -131,6 +149,7 @@ fullstack-agentcore-solution-template/
 │   ├── coding-conventions.md # Code style guidelines
 │   └── development-best-practices.md # Development guidelines
 ├── .kiro/                  # Kiro CLI configuration
+├── docker-compose.yml      # Local development stack
 └── README.md
 ```
 

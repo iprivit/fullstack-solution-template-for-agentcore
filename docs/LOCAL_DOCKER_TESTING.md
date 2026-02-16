@@ -27,16 +27,16 @@ Docker testing validates:
 
 ```bash
 # Build and test (uses pattern from config.yaml)
-python scripts/test-agent-docker.py
+python test-scripts/test-agent-docker.py
 
 # Build only (verify Dockerfile without running)
-python scripts/test-agent-docker.py --build-only
+python test-scripts/test-agent-docker.py --build-only
 
 # Skip build, use existing image
-python scripts/test-agent-docker.py --skip-build
+python test-scripts/test-agent-docker.py --skip-build
 
 # Test specific pattern
-python scripts/test-agent-docker.py --pattern langgraph-single-agent
+python test-scripts/test-agent-docker.py --pattern langgraph-single-agent
 ```
 
 ## How It Works
