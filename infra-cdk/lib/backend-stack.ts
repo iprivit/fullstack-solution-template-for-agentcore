@@ -118,6 +118,13 @@ export class BackendStack extends cdk.NestedStack {
     let agentRuntimeArtifact: agentcore.AgentRuntimeArtifact
     let zipPackagerResource: cdk.CustomResource | undefined
 
+    if (deploymentType === "zip" && pattern === "claude-agent-sdk") {
+      throw new Error(
+        "claude-agent-sdk pattern requires Docker deployment (deployment_type: docker) " +
+        "because it needs Node.js and the claude-code CLI installed at build time."
+      )
+    }
+
     if (deploymentType === "zip") {
       // ZIP DEPLOYMENT: Use Lambda to package and upload to S3 (no Docker required)
       const repoRoot = path.resolve(__dirname, "..", "..")
@@ -299,6 +306,11 @@ export class BackendStack extends cdk.NestedStack {
       AWS_DEFAULT_REGION: stack.region,
       MEMORY_ID: memoryId,
       STACK_NAME: config.stack_name_base, // Required for agent to find SSM parameters
+    }
+
+    // Add claude-agent-sdk specific environment variable
+    if (pattern === "claude-agent-sdk") {
+      envVars["CLAUDE_CODE_USE_BEDROCK"] = "1"
     }
 
     // Create the runtime using L2 construct
